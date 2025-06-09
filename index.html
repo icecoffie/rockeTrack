@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>RockeTrack</title>
+<link rel="icon" href="rocketbyte.png" type="image/png">
+
+<!-- Leaflet CSS CDN -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-sA+9Yii08oSmu7Bk+T9Dl6Zo7YvJ1XwRVdCoxMlIRtk="
+  crossorigin=""/>
+
+<style>
+  /* Reset */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0; padding: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0a47a3 0%, #00172f 100%);
+    background-attachment: fixed;
+    color: #cbd5e1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  #app {
+    background: #121828;
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(10, 71, 163, 0.9);
+    width: 360px;
+    max-width: 100%;
+    padding: 24px 28px 30px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  h1 {
+    margin: 0 0 14px;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #60a5fa;
+    text-align: center;
+    user-select: none;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    margin: 20px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #3b82f6;
+    font-weight: 600;
+    user-select: none;
+  }
+
+  label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+    user-select: none;
+    color: #9ca3af;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    font-size: 1rem;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: none;
+    background: #1e293b;
+    color: #cbd5e1;
+    outline-offset: 2px;
+    outline-color: #2563eb;
+    transition: background-color 0.3s ease;
+    margin-bottom: 14px;
+  }
+
+  input[type="text"]:focus {
+    background-color: #273955;
+    outline-color: #93c5fd;
+  }
+
+  button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    padding: 12px;
+    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.6);
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+    user-select: none;
+    width: 100%;
+  }
+
+  button:hover,
+  button:focus {
+    background: #1d4ed8;
+    outline: none;
+  }
+
+  .tracking-link {
+    background: #1e293b;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-top: 14px;
+    word-break: break-word;
+    box-shadow: inset 0 0 12px #3b82f6aa;
+    cursor: pointer;
+    user-select: all;
+    transition: background-color 0.3s ease;
+  }
+
+  .tracking-link:hover {
+    background-color: #273955;
+  }
+
+  .info-text {
+    font-size: 0.9rem;
+    margin-top: 10px;
+    opacity: 0.7;
+    user-select: none;
+  }
+
+  .locations-list {
+    margin-top: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #16213e;
+    padding: 16px 20px;
+    border-radius: 12px;
+    color: #a5b4fc;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    user-select: text;
+  }
+
+  .location-entry {
+    background: #0f183a;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5);
+    word-break: break-word;
+  }
+
+  .location-entry button {
+    background: #3b82f6;
+    border: none;
+    border-radius: 12px;
+    padding: 6px 14px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .location-entry button:hover,
+  .location-entry button:focus {
+    background: #2563eb;
+    outline: none;
+  }
+
+  .small-text {
+    font-size: 0.75rem;
+    opacity: 0.65;
+    user-select: none;
+  }
+
+  #map {
+    height: 260px;
+    border-radius: 12px;
+    margin-top: 12px;
+  }
+
+  .notice {
+    background: #2563eb;
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-top: 18px;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+    user-select: none;
+    box-shadow: 0 5px 20px rgba(37, 99, 235, 0.7);
+    animation: fadeIn 1s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .locations-list::-webkit-scrollbar {
+    width: 8px;
+  }
+  .locations-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .locations-list::-webkit-scrollbar-thumb {
+    background-color: #2563ebcc;
+    border-radius: 8px;
+  }
+
+  /* Responsive for smaller devices */
+  @media (max-width: 400px) {
+    #app {
+      width: 100%;
+      padding: 18px 18px 26px;
+    }
+    h1 {
+      font-size: 1.75rem;
+    }
+    h2 {
+      font-size: 1.15rem;
+      margin-top: 14px;
+    }
+    #map {
+      height: 200px;
+    }
+  }
+</style>
+</head>
+<body>
+  <main id="app" role="main" aria-label="Tracking Links Creator and Tracker">
+    <h1>RockeTrack 🚀
+        Tracking Link Creator</h1>
+    <section aria-labelledby="create-label" style="margin-bottom: 24px;">
+      <h2 id="create-label">Create a Tracking Link</h2>
+      <label for="linkNameInput">Link Name</label>
+      <input
+        type="text"
+        id="linkNameInput"
+        autocomplete="off"
+        placeholder="Enter a name for your link"
+      />
+      <button id="createLinkBtn" aria-describedby="createDesc">Generate Link</button>
+      <div class="info-text" id="createDesc">
+        Click to generate a unique tracking link.
+      </div>
+      <div
+        id="generatedLink"
+        class="tracking-link"
+        tabindex="0"
+        aria-live="polite"
+        style="display:none;"
+        title="Click to copy the link"
+      ></div>
+      <div id="copyNotice" class="notice" style="display:none;">Link copied to clipboard!</div>
+    </section>
+
+    <section aria-labelledby="links-label">
+      <h2 id="links-label">Your Tracking Links & Visitor Data</h2>
+      <div
+        id="linksDataContainer"
+        class="locations-list"
+        tabindex="0"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-relevant="additions"
+      >
+        <!-- Filled dynamically -->
+      </div>
+      <div id="noLinksMessage" class="info-text" style="margin-top:10px;">
+        No tracking links created yet.
+      </div>
+    </section>
+
+    <div id="map" aria-label="Map showing visitor locations" tabindex="0" hidden></div>
+  </main>
+
+  <!-- Leaflet JS CDN -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o9N1j6wVhTifBmRoZXyJNvTJbxU9iUSGnx0+XiPkUNY="
+    crossorigin=""
+  ></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const baseUrl = window.location.origin + window.location.pathname;
+
+      function generateId() {
+        return Math.random().toString(36).slice(2, 9);
+      }
+
+      const STORAGE_KEY = "tracking_links_with_maps_data";
+
+      function loadLinksData() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        try {
+          return stored ? JSON.parse(stored) : {};
+        } catch {
+          return {};
+        }
+      }
+
+      function saveLinksData(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }
+
+      function createTrackingUrl(id) {
+        return baseUrl + "?track=" + encodeURIComponent(id);
+      }
+
+      function formatDate(ts) {
+        return new Date(ts).toLocaleString();
+      }
+
+      function escapeHtml(text) {
+        return text.replace(/[&<>"']/g, (m) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        }[m]));
+      }
+
+      function addNewLink(name) {
+        const id = generateId();
+        const data = loadLinksData();
+        data[id] = {
+          id,
+          name: name || "",
+          created: Date.now(),
+          visits: [],
+        };
+        saveLinksData(data);
+        return id;
+      }
+
+      function renderLinksList() {
+        const container = document.getElementById("linksDataContainer");
+        const noLinksMsg = document.getElementById("noLinksMessage");
+        const data = loadLinksData();
+        const keys = Object.keys(data);
+        container.innerHTML = "";
+        if (keys.length === 0) {
+          noLinksMsg.style.display = "block";
+          hideMap();
+          return;
+        }
+        noLinksMsg.style.display = "none";
+
+        keys.forEach((id) => {
+          const link = data[id];
+          const url = createTrackingUrl(id);
+          const displayName = link.name.trim() || "(No name)";
+          const visitsCount = link.visits.length;
+
+          let html = `<strong>${escapeHtml(displayName)}</strong><br>`;
+          html += `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#93c5fd; word-break: break-all;">${url}</a><br>`;
+          html += `<span class="small-text">Created: ${formatDate(
+            link.created
+          )}</span><br>`;
+          html += `<span class="small-text">${visitsCount} visit${
+            visitsCount !== 1 ? "s" : ""
+          }</span><br>`;
+
+          html += `<button type="button" aria-expanded="false" aria-controls="visits-${escapeHtml(
+            id
+          )}">Show Map</button>`;
+
+          html += `<div id="visits-${escapeHtml(
+            id
+          )}" class="location-entry" style="display:none;">`;
+          if (visitsCount === 0) {
+            html += "No visits logged yet.";
+          } else {
+            html += `<ul style="list-style:none; padding-left:0; margin-top:6px;">`;
+            link.visits.forEach((visit, i) => {
+              html += `<li><strong>Visitor ${
+                i + 1
+              }</strong> - ${formatDate(
+                visit.timestamp
+              )}<br>Latitude: ${escapeHtml(
+                visit.latitude.toFixed(6)
+              )}, Longitude: ${escapeHtml(visit.longitude.toFixed(6))}</li><hr style="border:1px solid #23346c;margin:6px 0;">`;
+            });
+            html += "</ul>";
+          }
+          html += "</div>";
+
+          const div = document.createElement("div");
+          div.className = "location-entry";
+          div.innerHTML = html;
+          container.appendChild(div);
+        });
+
+        // Attach map toggle button handlers after creation
+        container.querySelectorAll("button").forEach((button, index) => {
+          button.addEventListener("click", () => {
+            const controlsId = button.getAttribute("aria-controls");
+            const detailsDiv = document.getElementById(controlsId);
+            if (!detailsDiv) return;
+
+            // Toggle
+            const expanded = button.getAttribute("aria-expanded") === "true";
+            if (expanded) {
+              button.setAttribute("aria-expanded", "false");
+              detailsDiv.style.display = "none";
+              hideMap();
+            } else {
+              // Show details & map with visitor points for this link
+              button.setAttribute("aria-expanded", "true");
+              detailsDiv.style.display = "block";
+              const idx = Array.from(container.children).indexOf(button.parentElement);
+              showMapForLink(idx);
+            }
+          });
+        });
+      }
+
+      // Copy text helper
+      function copyText(text) {
+        if (navigator.clipboard) {
+          navigator.clipboard
+            .writeText(text)
+            .then(() => {
+              showCopyNotice(true);
+            })
+            .catch(() => {
+              fallbackCopy(text);
+            });
+        } else {
+          fallbackCopy(text);
+        }
+      }
+
+      function fallbackCopy(text) {
+        const input = document.createElement("input");
+        document.body.appendChild(input);
+        input.value = text;
+        input.select();
+        try {
+          document.execCommand("copy");
+          showCopyNotice(true);
+        } catch {
+          alert("Copy failed, please copy manually.");
+        }
+        document.body.removeChild(input);
+      }
+
+      function showCopyNotice(show) {
+        const notice = document.getElementById("copyNotice");
+        if (show) {
+          notice.style.display = "block";
+          setTimeout(() => (notice.style.display = "none"), 2000);
+        } else {
+          notice.style.display = "none";
+        }
+      }
+
+      function setupCopyOnClick() {
+        const genLink = document.getElementById("generatedLink");
+        genLink.onclick = () => copyText(genLink.textContent);
+        genLink.onkeydown = (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            copyText(genLink.textContent);
+          }
+        };
+      }
+
+      function saveVisit(id, visit) {
+        try {
+          const data = loadLinksData();
+          if (!data[id]) return;
+          data[id].visits.push(visit);
+          saveLinksData(data);
+        } catch {}
+      }
+
+      // Map variables
+      let map = null;
+      let markersGroup = null;
+
+      // Show map container and display markers for a link's visits
+      function showMapForLink(index) {
+        const data = loadLinksData();
+        const keys = Object.keys(data);
+        if (index < 0 || index >= keys.length) {
+          hideMap();
+          return;
+        }
+        const link = data[keys[index]];
+        const visits = link.visits;
+
+        // Prepare map container
+        const mapDiv = document.getElementById("map");
+        mapDiv.hidden = false;
+
+        // Initialize map if needed
+        if (!map) {
+          map = L.map("map", { zoomControl: true, tap: false }).setView(
+            [0, 0],
+            1
+          );
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18,
+          }).addTo(map);
+          markersGroup = L.layerGroup().addTo(map);
+        }
+
+        markersGroup.clearLayers();
+
+        if (visits.length === 0) {
+          mapDiv.style.height = "0px";
+          mapDiv.hidden = true;
+          return;
+        } else {
+          mapDiv.style.height = "260px";
+        }
+
+        const latlngs = visits.map((v) => [v.latitude, v.longitude]);
+
+        latlngs.forEach((latlng, i) => {
+          const marker = L.marker(latlng).addTo(markersGroup);
+          marker.bindPopup(
+            `<strong>Visitor ${i + 1}</strong><br>${formatDate(visits[i].timestamp)}<br>Lat: ${latlng[0].toFixed(6)}, Lon: ${latlng[1].toFixed(
+              6
+            )}`
+          );
+        });
+
+        if (latlngs.length === 1) {
+          map.setView(latlngs[0], 12);
+        } else {
+          const bounds = L.latLngBounds(latlngs);
+          map.fitBounds(bounds, { padding: [40, 40] });
+        }
+      }
+
+      // Hide map container
+      function hideMap() {
+        const mapDiv = document.getElementById("map");
+        mapDiv.style.height = "0";
+        mapDiv.hidden = true;
+      }
+
+      // Create link button handling
+      document.getElementById("createLinkBtn").addEventListener("click", () => {
+        const input = document.getElementById("linkNameInput");
+        const name = input.value.trim();
+        if (name.length > 80) {
+          alert("Link name too long (max 80 characters).");
+          return;
+        }
+        const id = addNewLink(name);
+        input.value = "";
+        const genLink = document.getElementById("generatedLink");
+        genLink.textContent = createTrackingUrl(id);
+        genLink.style.display = "block";
+        genLink.focus();
+        showCopyNotice(false);
+        renderLinksList();
+      });
+
+      renderLinksList();
+      setupCopyOnClick();
+
+      // Check for tracking id in URL
+      function getQueryParam(name) {
+        return new URLSearchParams(window.location.search).get(name);
+      }
+      const trackingId = getQueryParam("track");
+
+      if (trackingId) {
+        // Replace UI with tracking page
+        const appDiv = document.getElementById("app");
+        appDiv.innerHTML = `
+          <h1>Tracking Link</h1>
+          <p style="font-size:1.15rem; margin: 12px 0; user-select:none;">
+            Waiting for your location permission...
+          </p>
+          <p id="trackingStatus" style="user-select:none;"></p>
+          <button id="btnClose" style="
+            margin-top:24px;
+            background:#2563eb;
+            border:none;
+            padding:12px 24px;
+            border-radius:14px;
+            color:#fff;
+            font-weight:700;
+            cursor:pointer;
+            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.7);
+            user-select:none;
+          ">Close</button>
+        `;
+
+        const statusEl = document.getElementById("trackingStatus");
+        const btnClose = document.getElementById("btnClose");
+        btnClose.onclick = () => {
+          if (window.close) window.close();
+          else window.location.href = "about:blank";
+        };
+
+        if ("geolocation" in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              statusEl.innerHTML = `
+                Location acquired! Thank you.<br>
+                <strong>Latitude:</strong> ${pos.coords.latitude.toFixed(
+                  6
+                )}<br>
+                <strong>Longitude:</strong> ${pos.coords.longitude.toFixed(
+                  6
+                )}<br>
+                ${pos.coords.accuracy ? `<strong>Accuracy:</strong> ±${pos.coords.accuracy} meters` : ""}<br><br>
+                Thanks for visiting!
+              `;
+              saveVisit(trackingId, {
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy || null,
+                timestamp: Date.now(),
+              });
+            },
+            (err) => {
+              statusEl.textContent = "Failed to get location: " + err.message;
+            },
+            { timeout: 15000, maximumAge: 0, enableHighAccuracy: true }
+          );
+        } else {
+          statusEl.textContent =
+            "Geolocation is not supported by your browser.";
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
+
